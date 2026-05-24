@@ -1,0 +1,137 @@
+name: TRION PortalDot Oracle CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Ink! contract checks ──────────────────────────────────────────────────
+  ink-contracts:
+    name: Ink! Contracts (unit tests)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        contract:
+          - contracts/trion_signal_gate
+          - contracts/btcp_escrow
+          - contracts/behavioral_limit_order
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.contract }}
+
+      - name: Check contract
+        run: cargo check
+        working-directory: ${{ matrix.contract }}
+
+      - name: Run unit tests
+        run: cargo test --features std
+        working-directory: ${{ matrix.contract }}
+
+      - name: Clippy
+        run: cargo clippy --features std -- -D warnings
+        working-directory: ${{ matrix.contract }}
+        continue-on-error: true
+
+  # ── Oracle bridge (Rust workspace) ───────────────────────────────────────
+  oracle-bridge:
+    name: Oracle Bridge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check workspace
+        run: cargo check --workspace
+
+      - name: Run tests
+        run: cargo test --workspace
+        env:
+          ORACLE_API_URL: http://127.0.0.1:5000
+          PORTALDOT_RPC_URL: wss://rpc.portaldot.io
+
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+        continue-on-error: true
+
+  # ── Python SDK ────────────────────────────────────────────────────────────
+  python-sdk:
+    name: Python SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests substrate-interface pytest
+        continue-on-error: true
+
+      - name: Syntax check
+        run: python -m py_compile sdk/portaldot_client.py sdk/deploy.py sdk/demo.py
+
+      - name: Import check
+        run: python -c "import sdk.portaldot_client; print('SDK import OK')"
+        continue-on-error: true
+
+  # ── Build Ink! WASM (release) ─────────────────────────────────────────────
+  build-wasm:
+    name: Build Ink! WASM (release)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [ink-contracts]
+    strategy:
+      matrix:
+        contract:
+          - contracts/trion_signal_gate
+          - contracts/btcp_escrow
+          - contracts/behavioral_limit_order
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable + wasm32
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.contract }}
+
+      - name: Install cargo-contract
+        run: cargo install cargo-contract --locked
+        continue-on-error: true
+
+      - name: Build WASM
+        run: cargo contract build --release
+        working-directory: ${{ matrix.contract }}
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.contract }}-wasm
+          path: ${{ matrix.contract }}/target/ink/
+        continue-on-error: true
