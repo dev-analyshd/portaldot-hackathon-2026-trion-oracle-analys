@@ -1,0 +1,12 @@
+target/
+.env
+*.wasm
+*.contract
+*.json
+!metadata.json
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+Cargo.lock
+!contracts/*/Cargo.lock
