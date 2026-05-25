@@ -2,8 +2,8 @@
 
 > *"Where Chainlink delivers prices faster, TRION delivers truth deeper — behavioral ground truth derived from 37 chains, stripped of manipulation, verified by coherence."*
 
-[![License: CC0](https://img.shields.io/badge/License-CC0-blue.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
-[![CI](https://github.com/dev-analyshd/trion-portaldot-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/dev-analyshd/trion-portaldot-oracle/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/dev-analyshd/portaldot-hackathon-2026-trion-oracle-analys/actions/workflows/ci.yml/badge.svg)](https://github.com/dev-analyshd/portaldot-hackathon-2026-trion-oracle-analys/actions)
 [![Ink! v5](https://img.shields.io/badge/ink!-v5.1.1-purple.svg)](https://use.ink)
 [![PortalDot](https://img.shields.io/badge/chain-PortalDot-blue.svg)](https://portaldot.io)
 
